@@ -47,10 +47,10 @@ type Model struct {
 func New() Model {
 	items := []menuItem{
 		{label: "── INSPECT ──────────────────────────────────────", isSeparator: true},
-		{label: "SSH key", desc: "public/private key details", action: "inspect_key"},
-		{label: "SSH cert", desc: "principals, validity, signing CA", action: "inspect_cert"},
+		{label: "Inspect key", desc: "public/private key details", action: "inspect_key"},
+		{label: "Inspect cert", desc: "principals, validity, signing CA", action: "inspect_cert"},
 		{label: "── GENERATE ─────────────────────────────────────", isSeparator: true},
-		{label: "SSH key", desc: "new Ed25519/RSA/ECDSA keypair", action: "gen_key"},
+		{label: "Generate key", desc: "new Ed25519/RSA/ECDSA keypair", action: "gen_key"},
 		{label: "─────────────────────────────────────────────────", isSeparator: true},
 		{label: "History", desc: "view recent operations log", action: "history"},
 		{label: "Update", desc: "download and install the latest version", action: "update"},

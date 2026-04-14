@@ -91,11 +91,11 @@ Each `release-*` target runs `go vet`, tests, tags and pushes. GitHub Actions th
 ## Features
 
 ### Inspect
-- **SSH key** — public or private key: fingerprint, type, size, comment, encrypted flag
-- **SSH cert** — principals, validity, signing CA, key ID, extensions
+- **Inspect key** — public or private key: fingerprint (SHA-256 + MD5), type, size, comment, encrypted flag
+- **Inspect cert** — principals, validity, signing CA, key ID, extensions, days remaining
 
 ### Generate
-- **SSH key** — Ed25519 / RSA / ECDSA / DSA, configurable bits / curve, optional passphrase, comment
+- **Generate key** — Ed25519 / RSA / ECDSA / DSA, configurable bits / curve, optional passphrase, comment, output preset (default / hostname suffix / custom)
 
 ### Utilities
 - **History** — log of all operations stored in `~/.sshtui/history.log`, viewable from the menu
