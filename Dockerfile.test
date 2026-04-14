@@ -1,0 +1,15 @@
+FROM debian:stable-slim
+
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends openssh-client ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Download the binary directly (no install.sh — inside Docker we're already root)
+RUN ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') && \
+    curl -sSLf "https://github.com/diegovrocha/sshtui/releases/latest/download/sshtui_linux_${ARCH}.tar.gz" \
+    | tar -xz -C /usr/local/bin sshtui && \
+    chmod +x /usr/local/bin/sshtui
+
+WORKDIR /keys
+
+CMD ["sshtui"]

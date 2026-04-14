@@ -1,0 +1,8 @@
+.DS_Store
+/sshtui
+dist/
+*.key
+id_*
+*.pub
+known_hosts
+/tmp/
