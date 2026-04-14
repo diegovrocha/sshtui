@@ -26,6 +26,12 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
+release:
+  # Replace existing assets when re-running the workflow (avoids 422
+  # "already_exists" errors if the release was already created by a
+  # previous attempt).
+  replace_existing_artifacts: true
+
 changelog:
   sort: asc
   filters:
