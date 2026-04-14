@@ -124,14 +124,17 @@ func (fp *FilePicker) loadDir() {
 	var files []fileEntry
 
 	for _, e := range dirEntries {
-		if strings.HasPrefix(e.Name(), ".") {
+		// Skip only a few noisy entries; show .ssh, .config, etc.
+		// (SSH keys live in ~/.ssh — users need to see dot-dirs.)
+		switch e.Name() {
+		case ".git", ".DS_Store", ".Trash", ".cache":
 			continue
 		}
 		if e.IsDir() {
-			// Only show dirs that contain matching files (check 2 levels deep)
-			if fp.dirHasFiles(filepath.Join(fp.cwd, e.Name()), 2) {
-				dirs = append(dirs, fileEntry{name: e.Name() + "/", isDir: true, path: filepath.Join(fp.cwd, e.Name())})
-			}
+			// Show ALL directories so the user can freely navigate.
+			// SSH keys tend to live in ~/.ssh only, so filtering dirs
+			// by content (like certui does) would hide useful folders.
+			dirs = append(dirs, fileEntry{name: e.Name() + "/", isDir: true, path: filepath.Join(fp.cwd, e.Name())})
 		} else {
 			if matchFilename(e.Name(), fp.exts) {
 				files = append(files, fileEntry{name: e.Name(), isDir: false, path: filepath.Join(fp.cwd, e.Name())})
@@ -155,7 +158,8 @@ func (fp *FilePicker) dirHasFiles(dir string, depth int) bool {
 		return false
 	}
 	for _, e := range entries {
-		if strings.HasPrefix(e.Name(), ".") {
+		switch e.Name() {
+		case ".git", ".DS_Store", ".Trash", ".cache":
 			continue
 		}
 		if e.IsDir() {

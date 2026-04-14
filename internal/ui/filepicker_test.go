@@ -154,7 +154,9 @@ func TestFilePickerDirNavigation(t *testing.T) {
 	}
 }
 
-func TestFilePickerHidesEmptyDirs(t *testing.T) {
+func TestFilePickerShowsAllDirs(t *testing.T) {
+	// Unlike certui, sshtui shows all directories so the user can freely
+	// navigate — SSH keys tend to live only in ~/.ssh.
 	dir := t.TempDir()
 	os.Mkdir(filepath.Join(dir, "empty"), 0755)
 	os.Mkdir(filepath.Join(dir, "haskey"), 0755)
@@ -164,10 +166,20 @@ func TestFilePickerHidesEmptyDirs(t *testing.T) {
 	fp.cwd = dir
 	fp.loadDir()
 
+	var foundEmpty, foundHasKey bool
 	for _, e := range fp.entries {
 		if e.isDir && e.name == "empty/" {
-			t.Error("Should not list empty directory")
+			foundEmpty = true
 		}
+		if e.isDir && e.name == "haskey/" {
+			foundHasKey = true
+		}
+	}
+	if !foundEmpty {
+		t.Error("Should list empty directory to allow free navigation")
+	}
+	if !foundHasKey {
+		t.Error("Should list directory containing matching files")
 	}
 }
 

@@ -19,6 +19,7 @@ type keyStep int
 const (
 	stepAlgo keyStep = iota
 	stepBits
+	stepOutPreset
 	stepOut
 	stepConfirmOverwrite
 	stepComment
@@ -79,7 +80,7 @@ type keyGenResult struct {
 }
 
 func isKeyChoiceStep(s keyStep) bool {
-	return s == stepAlgo || s == stepBits || s == stepConfirmOverwrite
+	return s == stepAlgo || s == stepBits || s == stepOutPreset || s == stepConfirmOverwrite
 }
 
 func isKeyInputStep(s keyStep) bool {
@@ -98,10 +99,33 @@ func (m *KeyModel) choiceMax() int {
 			return len(ecdsaBits) - 1
 		}
 		return 0
+	case stepOutPreset:
+		return 2 // 3 options: default, hostname suffix, custom
 	case stepConfirmOverwrite:
 		return 1
 	}
 	return 0
+}
+
+// hostnameSuffix returns a sanitized hostname token to tack onto key filenames.
+func hostnameSuffix() string {
+	host, err := os.Hostname()
+	if err != nil || host == "" {
+		return "host"
+	}
+	// Trim ".local", ".lan" suffixes and punctuation
+	host = strings.TrimSuffix(host, ".local")
+	host = strings.TrimSuffix(host, ".lan")
+	// Sanitize: replace non-alphanumeric with underscore
+	var b strings.Builder
+	for _, r := range host {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			b.WriteRune(r)
+		} else {
+			b.WriteRune('_')
+		}
+	}
+	return strings.ToLower(b.String())
 }
 
 func (m *KeyModel) newInput(placeholder, value string, password bool) tea.Cmd {
@@ -191,8 +215,9 @@ func (m *KeyModel) advance() (tea.Model, tea.Cmd) {
 		}
 		// ed25519 / dsa — skip bits step
 		m.bits = ""
-		m.step = stepOut
-		return m, m.newInput(defaultOutPath(m.algo), defaultOutPath(m.algo), false)
+		m.step = stepOutPreset
+		m.optCur = 0
+		return m, nil
 
 	case stepBits:
 		if m.algo == "rsa" {
@@ -204,8 +229,37 @@ func (m *KeyModel) advance() (tea.Model, tea.Cmd) {
 		} else if m.algo == "ecdsa" {
 			m.bits = ecdsaBits[m.optCur]
 		}
-		m.step = stepOut
-		return m, m.newInput(defaultOutPath(m.algo), defaultOutPath(m.algo), false)
+		m.step = stepOutPreset
+		m.optCur = 0
+		return m, nil
+
+	case stepOutPreset:
+		// 0 = default, 1 = auto suffix with hostname, 2 = custom
+		switch m.optCur {
+		case 0:
+			m.out = expandTilde(defaultOutPath(m.algo))
+			if _, err := os.Stat(m.out); err == nil {
+				m.step = stepConfirmOverwrite
+				m.optCur = 1 // default No
+				return m, nil
+			}
+			m.step = stepComment
+			return m, m.newInput(defaultComment(), defaultComment(), false)
+		case 1:
+			suffix := hostnameSuffix()
+			candidate := defaultOutPath(m.algo) + "_" + suffix
+			m.out = expandTilde(candidate)
+			if _, err := os.Stat(m.out); err == nil {
+				m.step = stepConfirmOverwrite
+				m.optCur = 1
+				return m, nil
+			}
+			m.step = stepComment
+			return m, m.newInput(defaultComment(), defaultComment(), false)
+		case 2:
+			m.step = stepOut
+			return m, m.newInput(defaultOutPath(m.algo), defaultOutPath(m.algo), false)
+		}
 
 	case stepOut:
 		v := strings.TrimSpace(m.input.Value())
@@ -408,13 +462,24 @@ func (m *KeyModel) View() string {
 
 	case stepBits:
 		var opts []string
+		var labels []string
 		title := "Key size:"
 		if m.algo == "rsa" {
 			opts = rsaBits
 			title = "RSA key size (bits):"
+			labels = []string{
+				"2048  (minimum acceptable, widely compatible)",
+				"3072  (balanced, ~128-bit security)",
+				"4096  (maximum, ~152-bit security — slower)",
+			}
 		} else if m.algo == "ecdsa" {
 			opts = ecdsaBits
 			title = "ECDSA curve size (bits):"
+			labels = []string{
+				"256   (P-256 / nistp256 — recommended, TLS 1.3 default)",
+				"384   (P-384 / nistp384 — NSA Suite B)",
+				"521   (P-521 / nistp521 — paranoid, rarely needed)",
+			}
 		}
 		b.WriteString("  " + title + "\n\n")
 		for i, o := range opts {
@@ -424,7 +489,37 @@ func (m *KeyModel) View() string {
 				cursor = ui.ActiveStyle.Render("➤ ")
 				style = ui.ActiveStyle
 			}
-			b.WriteString(fmt.Sprintf("  %s%s\n", cursor, style.Render(o)))
+			label := o
+			if i < len(labels) {
+				label = labels[i]
+			}
+			b.WriteString(fmt.Sprintf("  %s%s\n", cursor, style.Render(label)))
+		}
+
+	case stepOutPreset:
+		b.WriteString("  Output key path:\n")
+		b.WriteString("  " + ui.DimStyle.Render("Choose a preset or type a custom path — avoid overwriting existing keys.") + "\n\n")
+		defaultPath := defaultOutPath(m.algo)
+		hostPath := defaultPath + "_" + hostnameSuffix()
+		exists := func(p string) string {
+			if _, err := os.Stat(expandTilde(p)); err == nil {
+				return "  " + ui.WarnStyle.Render("[exists]")
+			}
+			return ""
+		}
+		labels := []string{
+			fmt.Sprintf("Default         %s%s", defaultPath, exists(defaultPath)),
+			fmt.Sprintf("With hostname   %s%s", hostPath, exists(hostPath)),
+			"Custom          (type your own)",
+		}
+		for i, label := range labels {
+			cursor := "  "
+			style := ui.InactiveStyle
+			if i == m.optCur {
+				cursor = ui.ActiveStyle.Render("➤ ")
+				style = ui.ActiveStyle
+			}
+			b.WriteString(fmt.Sprintf("  %s%s\n", cursor, style.Render(label)))
 		}
 
 	case stepOut:
