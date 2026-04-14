@@ -7,11 +7,11 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/diegovrocha/sshtui)](https://goreportcard.com/report/github.com/diegovrocha/sshtui)
 
 ```
-  _ _     _____ _   _ ___
- ___ ___| |__ |_   _| | | |_ _|   SSH + TUI
-/ __/ __| '_ \  | | | | | || |   Inspect and generate SSH keys
-\__ \__ \ | | | | | | |_| || |   and certificates.
-|___/___/_| |_| |_|  \___/|___|   https://github.com/diegovrocha/sshtui
+          _   _____ _   _ ___
+ ___ ___ | |_|_   _| | | |_ _|   SSH + TUI
+/ __/ __|| '_ \| | | | | || |    Inspect and generate SSH keys
+\__ \__ \| | | | | | |_| || |    and certificates.
+|___/___/|_| |_|_|  \___/|___|   https://github.com/diegovrocha/sshtui
 ```
 
 TUI for inspecting and generating SSH keys and certificates. Uses `ssh-keygen` under the hood.
@@ -72,10 +72,10 @@ make uninstall       # remove from /usr/local/bin
 
 # Release (maintainers only)
 make release-auto    # detect bump from commit messages (recommended)
-make release-patch   # bug fix: v1.3.0 → v1.3.1
-make release-minor   # new feature: v1.3.0 → v1.4.0
-make release-major   # breaking change: v1.3.0 → v2.0.0
-make release VERSION=1.5.0  # explicit version
+make release-patch   # bug fix: v0.1.0 → v0.1.1
+make release-minor   # new feature: v0.1.0 → v0.2.0
+make release-major   # breaking change: v0.1.0 → v1.0.0
+make release VERSION=0.2.0  # explicit version
 ```
 
 Each `release-*` target runs `go vet`, tests, tags and pushes. GitHub Actions then builds and publishes the release automatically.
@@ -127,7 +127,6 @@ Press `?` on any screen to see a contextual help overlay listing the keys that s
 ### Inspect results
 | Key | Action |
 |-----|--------|
-| `f` | Toggle full view (extra fields) |
 | `y` | Copy details to clipboard |
 | `s` | Save details as `.txt` |
 | `n` | Inspect another key / cert |
